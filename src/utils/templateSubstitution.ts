@@ -13,15 +13,15 @@ const DEFAULT_PATTERNS: Record<string, string> = {
   time: 'HH:mm',
 }
 
-const TOKEN_RESOLVERS: Record<string, (arg: string | undefined, ctx: TemplateContext, now: Date) => string | null> = {
-  date: (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.date),
-  time: (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.time),
-  title: (_arg, ctx) => ctx.title ?? '',
-  type: (_arg, ctx) => ctx.type ?? '',
-}
+const TOKEN_RESOLVERS = new Map<string, (arg: string | undefined, ctx: TemplateContext, now: Date) => string | null>([
+  ['date', (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.date)],
+  ['time', (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.time)],
+  ['title', (_arg, ctx) => ctx.title ?? ''],
+  ['type', (_arg, ctx) => ctx.type ?? ''],
+])
 
 function resolveToken(name: string, arg: string | undefined, ctx: TemplateContext, now: Date): string | null {
-  const resolver = TOKEN_RESOLVERS[name]
+  const resolver = TOKEN_RESOLVERS.get(name)
   return resolver ? resolver(arg, ctx, now) : null
 }
 

@@ -74,6 +74,15 @@ vi.mock('react-day-picker', () => ({
   getDefaultClassNames: () => ({}),
 }))
 
+// Mock Radix FocusScope: its setTimeout-based cleanup dispatches events on detached
+// DOM nodes after unmount in jsdom, causing "parameter 1 is not of type 'Event'".
+vi.mock('@radix-ui/react-focus-scope', () => ({
+  FocusScope: ({ children }: { children: React.ReactNode }) =>
+    children,
+  Root: ({ children }: { children: React.ReactNode }) =>
+    children,
+}))
+
 function getVirtualizedIndexes(length: number): number[] {
   if (length <= 200) return Array.from({ length }, (_, index) => index)
 
