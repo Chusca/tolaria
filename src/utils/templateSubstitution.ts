@@ -8,14 +8,21 @@ export type TemplateContext = {
 
 const TOKEN_PATTERN = /\{\{(\w+)(?::([^}]+))?\}\}/g
 
+const DEFAULT_PATTERNS: Record<string, string> = {
+  date: 'yyyy-MM-dd',
+  time: 'HH:mm',
+}
+
+const TOKEN_RESOLVERS: Record<string, (arg: string | undefined, ctx: TemplateContext, now: Date) => string | null> = {
+  date: (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.date),
+  time: (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.time),
+  title: (_arg, ctx) => ctx.title ?? '',
+  type: (_arg, ctx) => ctx.type ?? '',
+}
+
 function resolveToken(name: string, arg: string | undefined, ctx: TemplateContext, now: Date): string | null {
-  if (name === 'date' || name === 'time') {
-    const pattern = arg ?? (name === 'date' ? 'yyyy-MM-dd' : 'HH:mm')
-    return safeFormat(now, pattern)
-  }
-  if (name === 'title') return ctx.title ?? ''
-  if (name === 'type') return ctx.type ?? ''
-  return null
+  const resolver = TOKEN_RESOLVERS[name]
+  return resolver ? resolver(arg, ctx, now) : null
 }
 
 function safeFormat(now: Date, pattern: string): string | null {

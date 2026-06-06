@@ -276,7 +276,7 @@ export interface NewNoteParams {
   now?: Date
 }
 
-export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem, now }: NewNoteParams): { entry: VaultEntry; content: string } {
+export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem }: NewNoteParams): { entry: VaultEntry; content: string } {
   const creationVaultPath = resolveCreationVaultPath(vaultPath, defaultWorkspacePath, vaults)
   const slug = filenameStem ? slugify(filenameStem) : slugify(title)
   const status = null
@@ -286,7 +286,7 @@ export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, v
   }
   return applyTypeDefaults({
     entry,
-    content: buildNoteContent({ title, type, status, template, defaults, now }),
+    content: buildNoteContent({ title, type, status, template, defaults }),
     defaults,
   })
 }
@@ -401,9 +401,8 @@ export function planNewNoteCreation({
   template,
   defaults,
   filenameStem,
-  now,
 }: NewNoteParams & { entries: VaultEntry[] }): NoteCreationPlan {
-  const resolved = resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem, now })
+  const resolved = resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem })
   const collision = findPathCollision(entries, resolved.entry.path)
   if (collision) {
     if (filenameStem) return { status: 'existing', entry: collision }
@@ -569,7 +568,7 @@ async function createNamedNote({
   const template = typeEntry?.template ?? null
   const defaults = resolveTypeInstanceDefaults({ entries, typeName: type })
   const filenameStem = resolveTypeFilename(typeEntry, { title, type, now })
-  const plan = planNewNoteCreation({ entries, title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem, now })
+  const plan = planNewNoteCreation({ entries, title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem })
   if (plan.status === 'existing') {
     openExistingEntry?.(plan.entry)
     trackEvent('note_opened_existing', { creation_path: creationPath ?? 'palette' })

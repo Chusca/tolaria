@@ -642,7 +642,7 @@ describe('useNoteCreation hook', () => {
   it('handleCreateNoteImmediate emits note_created with used_filename_template for a date-named type', async () => {
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockResolvedValue(undefined)
-    const todayIso = new Date().toISOString().slice(0, 10)
+    const todayIso = new Date().toLocaleDateString('en-CA')
     const typeEntry = makeEntry({ isA: 'Type', title: 'Journal', filenameTemplate: '{{date}}', path: '/test/vault/journal.md', filename: 'journal.md' })
     const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry]), tabDeps))
 
@@ -924,7 +924,7 @@ describe('useNoteCreation hook', () => {
   })
 
   it('handleCreateNote opens the existing note when a filename-stem type collides, and emits note_opened_existing (not note_created)', async () => {
-    const todayIso = new Date().toISOString().slice(0, 10)
+    const todayIso = new Date().toLocaleDateString('en-CA')
     const typeEntry = makeEntry({ isA: 'Type', title: 'Journal', filenameTemplate: '{{date}}', path: '/test/vault/journal.md', filename: 'journal.md' })
     const existing = makeEntry({ path: `/test/vault/${todayIso}.md`, filename: `${todayIso}.md`, title: todayIso, isA: 'Journal' })
     const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry, existing]), tabDeps))
@@ -945,7 +945,7 @@ describe('useNoteCreation hook', () => {
   it("handleCreateNoteImmediate opens today's existing journal and emits note_opened_existing (not note_created)", async () => {
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockResolvedValue(undefined)
-    const todayIso = new Date().toISOString().slice(0, 10)
+    const todayIso = new Date().toLocaleDateString('en-CA')
     const typeEntry = makeEntry({ isA: 'Type', title: 'Journal', filenameTemplate: '{{date}}', path: '/test/vault/journal.md', filename: 'journal.md' })
     const existing = makeEntry({ path: `/test/vault/${todayIso}.md`, filename: `${todayIso}.md`, title: todayIso, isA: 'Journal' })
     const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry, existing]), tabDeps))
