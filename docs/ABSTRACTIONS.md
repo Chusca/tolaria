@@ -254,6 +254,7 @@ Each entity type can have a corresponding **type document**: any markdown note w
 | `order` | number | Sidebar display order (lower = higher priority) |
 | `sidebar_label` | string | Custom label overriding auto-pluralization |
 | `template` | string | Markdown template for new notes of this type |
+| `_filename_template` | string | Filename pattern for new notes of this type. Tokens (`{{date}}`, `{{date:yyyy-MM-dd}}`, `{{time}}`, `{{title}}`, `{{type}}`) resolve at creation time; if the resulting file already exists, Tolaria opens it instead of creating a duplicate |
 | `sort` | string | Default sort: "modified:desc", "title:asc", "property:Priority:asc"; bare custom-property form such as "Priority:asc" is accepted and normalized in the UI |
 | `view` | string | Default view mode: "all", "editor-list", "editor-only" |
 | `visible` | bool | Whether type appears in sidebar (default: true) |

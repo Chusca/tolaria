@@ -54,6 +54,31 @@ fn test_parse_template_block_scalar() {
 }
 
 #[test]
+fn test_parse_filename_template_from_type_entry() {
+    let dir = TempDir::new().unwrap();
+    let content = "---\ntype: Type\n_filename_template: \"{{date:yyyy-MM-dd}}\"\n---\n# Journal\n";
+    let entry = parse_test_entry(&dir, "journal.md", content);
+    assert_eq!(
+        entry.filename_template.as_deref(),
+        Some("{{date:yyyy-MM-dd}}"),
+        "_filename_template must be parsed for journal filenames"
+    );
+}
+
+#[test]
+fn test_vault_entry_serializes_filename_template_as_camel_case() {
+    let entry = VaultEntry {
+        filename_template: Some("{{date}}".to_string()),
+        ..VaultEntry::default()
+    };
+    let json = serde_json::to_string(&entry).unwrap();
+    assert!(
+        json.contains("\"filenameTemplate\""),
+        "expected camelCase key for the IPC boundary, got: {json}"
+    );
+}
+
+#[test]
 fn test_parse_template_missing_defaults_to_none() {
     let dir = TempDir::new().unwrap();
     let content = "---\ntype: Type\n---\n# Note\n";

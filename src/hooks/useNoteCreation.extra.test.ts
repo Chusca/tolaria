@@ -10,6 +10,7 @@ import {
   resolveNewType,
   planNewTypeCreation,
   resolveTemplate,
+  resolveTypeFilename,
 } from './useNoteCreation'
 
 const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
@@ -33,6 +34,7 @@ const makeEntry = (overrides: Partial<VaultEntry> = {}): VaultEntry => ({
   order: null,
   outgoingLinks: [],
   template: null,
+  filenameTemplate: null,
   sort: null,
   sidebarLabel: null,
   view: null,
@@ -291,6 +293,33 @@ describe('resolveNewNote', () => {
     const { entry } = resolveNewNote({ title: 'My Note', type: '+++', vaultPath: '/vault' })
     expect(entry.path).not.toContain('//')
     expect(entry.path).toMatch(/\.md$/)
+  })
+
+  it('uses a filename stem when provided instead of the title slug', () => {
+    const { entry } = resolveNewNote({ title: 'Anything', type: 'Journal', vaultPath: '/vault', filenameStem: '2026-06-06' })
+    expect(entry.filename).toBe('2026-06-06.md')
+    expect(entry.path).toBe('/vault/2026-06-06.md')
+  })
+})
+
+describe('resolveTypeFilename', () => {
+  it('returns null when no filename template is set', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Note' })
+    expect(resolveTypeFilename(typeEntry, { type: 'Note', now: new Date('2026-06-06T00:00:00') })).toBeNull()
+  })
+
+  it('returns null when the type entry is undefined', () => {
+    expect(resolveTypeFilename(undefined, { type: 'Note' })).toBeNull()
+  })
+
+  it('resolves a date filename template', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Journal', filenameTemplate: '{{date:yyyy-MM-dd}}' })
+    expect(resolveTypeFilename(typeEntry, { type: 'Journal', now: new Date('2026-06-06T00:00:00') })).toBe('2026-06-06')
+  })
+
+  it('returns null when the resolved stem is empty', () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Journal', filenameTemplate: '   ' })
+    expect(resolveTypeFilename(typeEntry, { type: 'Journal' })).toBeNull()
   })
 })
 

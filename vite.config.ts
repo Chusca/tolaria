@@ -44,6 +44,7 @@ interface VaultEntry {
   order: number | null
   sidebarLabel: string | null
   template: string | null
+  filenameTemplate: string | null
   sort: string | null
   view: string | null
   visible: boolean | null
@@ -370,6 +371,7 @@ function parseMarkdownFile(filePath: string): VaultEntry | null {
       order: fm.order != null ? Number(fm.order) : null,
       sidebarLabel: frontmatterString(fm, 'sidebar label', 'sidebar_label'),
       template: frontmatterString(fm, 'template'),
+      filenameTemplate: frontmatterString(fm, '_filename_template'),
       sort: frontmatterString(fm, 'sort'),
       view: frontmatterString(fm, 'view'),
       visible: frontmatterBool(fm, 'visible'),

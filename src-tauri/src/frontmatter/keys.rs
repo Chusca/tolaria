@@ -132,6 +132,12 @@ const KNOWN_FRONTMATTER_KEYS: &[FrontmatterKeyRule] = &[
         aliases: &["_list_properties_display"],
         canonicalize_on_write: false,
     },
+    FrontmatterKeyRule {
+        read_key: "_filename_template",
+        write_key: "_filename_template",
+        aliases: &["_filename_template"],
+        canonicalize_on_write: false,
+    },
 ];
 
 impl FrontmatterKeyRule {

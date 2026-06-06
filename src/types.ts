@@ -39,6 +39,9 @@ export interface VaultEntry {
   sidebarLabel: string | null
   /** Markdown template for Type entries. Pre-fills new notes created with this type. */
   template: string | null
+  /** Filename pattern for Type entries. Resolves `{{date}}`/`{{time}}`/`{{title}}`/`{{type}}`
+   *  tokens at creation time to produce date-based filenames (e.g. journal daily notes). */
+  filenameTemplate: string | null
   /** Default sort preference for the note list of this Type. Format: "option:direction". */
   sort: string | null
   /** Default view mode for the note list of this Type: "all", "editor-list", or "editor-only". */
