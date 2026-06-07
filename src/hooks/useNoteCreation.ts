@@ -15,6 +15,7 @@ import {
 import { canonicalFrontmatterKey } from '../utils/systemMetadata'
 import { canonicalizeTypeName } from '../utils/vaultTypes'
 import { substituteTemplate, type TemplateContext } from '../utils/templateSubstitution'
+import { resolveTypeSubfolder, effectiveImmediateFolder } from '../utils/typeSubfolder'
 import { labelFromWorkspacePath, workspaceIdentityFromVault } from '../utils/workspaces'
 import type { VaultOption } from '../components/status-bar/types'
 import { useCreateNoteInFolderRequests } from './noteCreationRequests'
@@ -273,15 +274,16 @@ export interface NewNoteParams {
   template?: string | null
   defaults?: TypeInstanceDefault[]
   filenameStem?: string | null
+  folderPath?: string | null
   now?: Date
 }
 
-export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem }: NewNoteParams): { entry: VaultEntry; content: string } {
+export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem, folderPath }: NewNoteParams): { entry: VaultEntry; content: string } {
   const creationVaultPath = resolveCreationVaultPath(vaultPath, defaultWorkspacePath, vaults)
   const slug = filenameStem ? slugify(filenameStem) : slugify(title)
   const status = null
   const entry = {
-    ...buildNewEntry({ path: joinVaultPath(creationVaultPath, `${slug}.md`), slug, title, type, status }),
+    ...buildNewEntry({ path: joinVaultPath(creationVaultPath, immediateNoteRelativePath(slug, folderPath ?? undefined)), slug, title, type, status }),
     workspace: workspaceForVaultPath(creationVaultPath, vaults, defaultWorkspacePath),
   }
   return applyTypeDefaults({
@@ -401,8 +403,9 @@ export function planNewNoteCreation({
   template,
   defaults,
   filenameStem,
+  folderPath,
 }: NewNoteParams & { entries: VaultEntry[] }): NoteCreationPlan {
-  const resolved = resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem })
+  const resolved = resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem, folderPath })
   const collision = findPathCollision(entries, resolved.entry.path)
   if (collision) {
     if (filenameStem) return { status: 'existing', entry: collision }
@@ -568,7 +571,8 @@ async function createNamedNote({
   const template = typeEntry?.template ?? null
   const defaults = resolveTypeInstanceDefaults({ entries, typeName: type })
   const filenameStem = resolveTypeFilename(typeEntry, { type, now })
-  const plan = planNewNoteCreation({ entries, title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem })
+  const typeSubfolder = resolveTypeSubfolder(typeEntry, { type, now })
+  const plan = planNewNoteCreation({ entries, title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem, folderPath: typeSubfolder ?? undefined })
   if (plan.status === 'existing') {
     openExistingEntry?.(plan.entry)
     trackEvent('note_opened_existing', { creation_path: creationPath ?? 'palette' })
@@ -582,7 +586,7 @@ async function createNamedNote({
   try {
     await persistResolvedEntry(plan.resolved)
     if (creationPath) {
-      trackEvent('note_created', { has_type: type !== 'Note' ? 1 : 0, creation_path: creationPath, used_filename_template: filenameStem ? 1 : 0 })
+      trackEvent('note_created', { has_type: type !== 'Note' ? 1 : 0, creation_path: creationPath, used_filename_template: filenameStem ? 1 : 0, used_subfolder_path: typeSubfolder ? 1 : 0 })
     }
     return true
   } catch (error) {
@@ -759,7 +763,7 @@ function immediateNoteRelativePath(slug: string, folderPath?: string): string {
 }
 
 type ImmediateCreateOutcome =
-  | { status: 'created'; usedFilenameTemplate: boolean }
+  | { status: 'created'; usedFilenameTemplate: boolean; usedSubfolderPath: boolean }
   | { status: 'existing' }
   | { status: 'failed' }
 
@@ -769,10 +773,12 @@ async function createNoteImmediate(deps: ImmediateCreateDeps, request: Immediate
   const creationVaultPath = resolveImmediateCreationVaultPath(deps, request)
   const typeEntry = resolveTypeEntry({ entries: deps.entries, typeName: noteType })
   const filenameStem = resolveTypeFilename(typeEntry, { type: noteType, now })
+  const typeSubfolder = resolveTypeSubfolder(typeEntry, { type: noteType, now })
+  const folder = effectiveImmediateFolder(request.folderPath, typeSubfolder)
   let slug: string
   if (filenameStem) {
     slug = slugify(filenameStem)
-    const fullPath = joinVaultPath(creationVaultPath, immediateNoteRelativePath(slug, request.folderPath))
+    const fullPath = joinVaultPath(creationVaultPath, immediateNoteRelativePath(slug, folder))
     const collision = findPathCollision(deps.entries, fullPath)
     if (collision) {
       deps.openExistingEntry?.(collision)
@@ -785,7 +791,7 @@ async function createNoteImmediate(deps: ImmediateCreateDeps, request: Immediate
   const template = resolveTemplate({ entries: deps.entries, typeName: noteType })
   const defaults = resolveTypeInstanceDefaults({ entries: deps.entries, typeName: noteType })
   const status = null
-  const relativePath = immediateNoteRelativePath(slug, request.folderPath)
+  const relativePath = immediateNoteRelativePath(slug, folder)
   const entry = {
     ...buildNewEntry({ path: joinVaultPath(creationVaultPath, relativePath), slug, title, type: noteType, status }),
     workspace: workspaceForVaultPath(creationVaultPath, deps.vaults, deps.defaultWorkspacePath),
@@ -802,15 +808,16 @@ async function createNoteImmediate(deps: ImmediateCreateDeps, request: Immediate
   deps.openTabWithContent(resolved.entry, resolved.content)
   addEntryWithMock(resolved.entry, resolved.content, deps.addEntry)
   signalFocusEditor({ path: resolved.entry.path, selectTitle: true })
-  return { status: 'created', usedFilenameTemplate: !!filenameStem }
+  return { status: 'created', usedFilenameTemplate: !!filenameStem, usedSubfolderPath: folder === typeSubfolder }
 }
 
-function trackImmediateCreate(request: ImmediateCreateRequest, didCreate: boolean, usedFilenameTemplate = false): void {
+function trackImmediateCreate(request: ImmediateCreateRequest, didCreate: boolean, usedFilenameTemplate = false, usedSubfolderPath = false): void {
   if (!didCreate) return
   trackEvent('note_created', {
     has_type: request.type ? 1 : 0,
     creation_path: request.creationPath ?? (request.type ? 'type_section' : 'cmd_n'),
     used_filename_template: usedFilenameTemplate ? 1 : 0,
+    used_subfolder_path: usedSubfolderPath ? 1 : 0,
   })
 }
 
@@ -885,7 +892,7 @@ function useImmediateCreateQueue(
 
     try {
       const outcome = await createNoteImmediate(deps, request)
-      if (outcome.status === 'created') trackImmediateCreate(request, true, outcome.usedFilenameTemplate)
+      if (outcome.status === 'created') trackImmediateCreate(request, true, outcome.usedFilenameTemplate, outcome.usedSubfolderPath)
       else if (outcome.status === 'existing') trackEvent('note_opened_existing', { creation_path: request.creationPath ?? (request.type ? 'type_section' : 'cmd_n') })
       else if (outcome.status === 'failed') console.warn('Failed to persist immediate note:', request.creationPath ?? request.type ?? 'untitled')
     } catch (error) {

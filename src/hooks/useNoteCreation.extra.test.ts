@@ -300,6 +300,21 @@ describe('resolveNewNote', () => {
     expect(entry.filename).toBe('2026-06-06.md')
     expect(entry.path).toBe('/vault/2026-06-06.md')
   })
+
+  it('files a named note into an explicit folder path', () => {
+    const { entry } = resolveNewNote({ title: 'Reflection', type: 'Journal', vaultPath: '/vault', folderPath: 'journals/2026/06' })
+    expect(entry.path).toBe('/vault/journals/2026/06/reflection.md')
+  })
+
+  it('keeps a named note at the vault root when no folder is given', () => {
+    const { entry } = resolveNewNote({ title: 'Reflection', type: 'Journal', vaultPath: '/vault' })
+    expect(entry.path).toBe('/vault/reflection.md')
+  })
+
+  it('treats an explicit null folderPath as the vault root', () => {
+    const { entry } = resolveNewNote({ title: 'Reflection', type: 'Journal', vaultPath: '/vault', folderPath: null })
+    expect(entry.path).toBe('/vault/reflection.md')
+  })
 })
 
 describe('resolveTypeFilename', () => {

@@ -19,6 +19,7 @@ const FRONTMATTER_ALIAS_GROUPS = {
   color: ['color'],
   template: ['template'],
   filenameTemplate: ['_filename_template'],
+  subfolderPath: ['_subfolder_path'],
   view: ['view'],
   visible: ['visible'],
   belongs_to: ['belongs_to', 'belongs to'],

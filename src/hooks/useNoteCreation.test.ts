@@ -657,6 +657,99 @@ describe('useNoteCreation hook', () => {
     expect(trackEvent).toHaveBeenCalledWith('note_created', expect.objectContaining({ used_filename_template: 1 }))
   })
 
+  it('handleCreateNoteImmediate files the note under the type _subfolder_path', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(invoke).mockResolvedValue(undefined)
+    const now = new Date()
+    const year = String(now.getFullYear())
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const todayIso = now.toLocaleDateString('en-CA')
+    const typeEntry = makeEntry({
+      isA: 'Type',
+      title: 'Journal',
+      filenameTemplate: '{{date}}',
+      subfolderPath: 'journals/{{date:yyyy}}/{{date:MM}}',
+      path: '/test/vault/journal.md',
+      filename: 'journal.md',
+    })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry]), tabDeps))
+
+    await act(async () => {
+      result.current.handleCreateNoteImmediate('Journal')
+      await flushImmediateCreate()
+    })
+
+    expect(vi.mocked(invoke)).toHaveBeenCalledWith('create_note_content', expect.objectContaining({
+      path: `/test/vault/journals/${year}/${month}/${todayIso}.md`,
+    }))
+    expect(trackEvent).toHaveBeenCalledWith('note_created', expect.objectContaining({ used_subfolder_path: 1 }))
+  })
+
+  it('handleCreateNoteImmediate prefers an explicit folderPath over the type _subfolder_path', async () => {
+    vi.mocked(isTauri).mockReturnValue(true)
+    vi.mocked(invoke).mockResolvedValue(undefined)
+    const todayIso = new Date().toLocaleDateString('en-CA')
+    const typeEntry = makeEntry({
+      isA: 'Type',
+      title: 'Journal',
+      filenameTemplate: '{{date}}',
+      subfolderPath: 'journals/{{date:yyyy}}/{{date:MM}}',
+      path: '/test/vault/journal.md',
+      filename: 'journal.md',
+    })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry]), tabDeps))
+
+    await act(async () => {
+      result.current.handleCreateNoteImmediate('Journal', {
+        creationPath: 'folder_header',
+        folderPath: 'projects/active',
+      })
+      await flushImmediateCreate()
+    })
+
+    expect(vi.mocked(invoke)).toHaveBeenCalledWith('create_note_content', expect.objectContaining({
+      path: `/test/vault/projects/active/${todayIso}.md`,
+    }))
+    expect(trackEvent).toHaveBeenCalledWith('note_created', expect.objectContaining({ used_subfolder_path: 0 }))
+  })
+
+  it('handleCreateNote files the note under the type _subfolder_path', async () => {
+    const now = new Date()
+    const year = String(now.getFullYear())
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const typeEntry = makeEntry({
+      isA: 'Type',
+      title: 'Journal',
+      subfolderPath: 'journals/{{date:yyyy}}/{{date:MM}}',
+      path: '/test/vault/journal.md',
+      filename: 'journal.md',
+    })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry]), tabDeps))
+
+    await act(async () => {
+      await result.current.handleCreateNote('Morning Reflection', 'Journal')
+    })
+
+    expect(addEntry).toHaveBeenCalledWith(expect.objectContaining({
+      path: `/test/vault/journals/${year}/${month}/morning-reflection.md`,
+    }))
+    expect(trackEvent).toHaveBeenCalledWith('note_created', expect.objectContaining({ used_subfolder_path: 1 }))
+  })
+
+  it('handleCreateNote stays at the vault root when the type has no _subfolder_path', async () => {
+    const typeEntry = makeEntry({ isA: 'Type', title: 'Note', path: '/test/vault/note.md', filename: 'note.md' })
+    const { result } = renderHook(() => useNoteCreation(makeConfig([typeEntry]), tabDeps))
+
+    await act(async () => {
+      await result.current.handleCreateNote('Plain Note', 'Note')
+    })
+
+    expect(addEntry).toHaveBeenCalledWith(expect.objectContaining({
+      path: '/test/vault/plain-note.md',
+    }))
+    expect(trackEvent).toHaveBeenCalledWith('note_created', expect.objectContaining({ used_subfolder_path: 0 }))
+  })
+
   it('handleCreateNoteImmediate does not open an optimistic note when disk creation fails', async () => {
     vi.mocked(isTauri).mockReturnValue(true)
     vi.mocked(invoke).mockRejectedValueOnce(new Error('disk full'))

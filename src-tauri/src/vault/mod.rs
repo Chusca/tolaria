@@ -158,6 +158,7 @@ pub fn parse_md_file(path: &Path, git_dates: Option<(u64, u64)>) -> Result<Vault
         sidebar_label: frontmatter.sidebar_label.and_then(|v| v.into_scalar()),
         template: frontmatter.template.and_then(|v| v.into_scalar()),
         filename_template: frontmatter.filename_template.and_then(|v| v.into_scalar()),
+        subfolder_path: frontmatter.subfolder_path.and_then(|v| v.into_scalar()),
         sort: frontmatter.sort.and_then(|v| v.into_scalar()),
         view: frontmatter.view.and_then(|v| v.into_scalar()),
         note_width: resolve_note_width(frontmatter.note_width),

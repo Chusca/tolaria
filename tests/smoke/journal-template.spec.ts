@@ -18,7 +18,7 @@ test.describe('Journal template substitution and date filenames', () => {
     writeFixtureNote(
       tempVaultDir,
       'journal.md',
-      '---\ntype: Type\nicon: notebook\ncolor: teal\ntemplate: "# {{date:EEEE, MMMM d}}\\n\\n"\n_filename_template: "{{date:yyyy-MM-dd}}"\n---\n# Journal\n',
+      '---\ntype: Type\nicon: notebook\ncolor: teal\ntemplate: "# {{date:EEEE, MMMM d}}\\n\\n"\n_filename_template: "{{date:yyyy-MM-dd}}"\n_subfolder_path: "journals/{{date:yyyy}}/{{date:MM}}"\n---\n# Journal\n',
     )
     await openFixtureVaultDesktopHarness(page, tempVaultDir)
     await page.setViewportSize({ width: 1600, height: 900 })
@@ -47,9 +47,17 @@ test.describe('Journal template substitution and date filenames', () => {
     await page.locator('[title="Create new note"]').first().click()
     await expect(page.getByTestId('breadcrumb-filename-trigger')).toContainText(todayIso, { timeout: 5_000 })
 
-    // Only one journal note file exists on disk.
-    const journalFiles = fs.readdirSync(tempVaultDir).filter((name) => /^\d{4}-\d{2}-\d{2}\.md$/.test(name))
+    // The journal note is filed in the resolved nested folder, not the vault root,
+    // and only one exists on disk (second creation opened the existing note).
+    const now = new Date()
+    const year = String(now.getFullYear())
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const journalDir = path.join(tempVaultDir, 'journals', year, month)
+    const journalFiles = fs.readdirSync(journalDir).filter((name) => /^\d{4}-\d{2}-\d{2}\.md$/.test(name))
     expect(journalFiles).toHaveLength(1)
+
+    const rootFiles = fs.readdirSync(tempVaultDir).filter((name) => /^\d{4}-\d{2}-\d{2}\.md$/.test(name))
+    expect(rootFiles).toHaveLength(0)
   })
 })
 
