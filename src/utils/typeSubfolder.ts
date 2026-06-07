@@ -1,9 +1,15 @@
 import type { VaultEntry } from '../types'
 import { substituteTemplate, type TemplateContext } from './templateSubstitution'
 
-const ILLEGAL_FOLDER_CHARS = /[<>:"|?*\\]/g
-// Built via new RegExp so the source has no literal control chars (avoids no-control-regex).
-const CONTROL_CHARS = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(31)}]`, 'g')
+const ILLEGAL_FOLDER_CHARS = new Set(['<', '>', ':', '"', '|', '?', '*', '\\'])
+
+function stripInvalidFolderChars(segment: string): string {
+  return segment
+    .trim()
+    .split('')
+    .filter((ch) => ch.charCodeAt(0) > 0x1f && !ILLEGAL_FOLDER_CHARS.has(ch))
+    .join('')
+}
 
 /** Sanitize a resolved subfolder template into a safe, normalized vault-relative
  *  folder. Parent-directory (`..`) and single-dot segments are dropped so the
@@ -12,7 +18,7 @@ const CONTROL_CHARS = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCo
 export function sanitizeSubfolderPath(raw: string): string | null {
   const segments = raw
     .split('/')
-    .map((segment) => segment.trim().replace(ILLEGAL_FOLDER_CHARS, '').replace(CONTROL_CHARS, ''))
+    .map(stripInvalidFolderChars)
     .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
   const normalized = segments.join('/').replace(/^\/+|\/+$/g, '')
   return normalized.length > 0 ? normalized : null

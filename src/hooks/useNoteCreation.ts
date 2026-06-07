@@ -278,7 +278,8 @@ export interface NewNoteParams {
   now?: Date
 }
 
-export function resolveNewNote({ title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem, folderPath }: NewNoteParams): { entry: VaultEntry; content: string } {
+export function resolveNewNote(params: NewNoteParams): { entry: VaultEntry; content: string } {
+  const { title, type, vaultPath, defaultWorkspacePath, vaults = [], template, defaults = [], filenameStem, folderPath } = params
   const creationVaultPath = resolveCreationVaultPath(vaultPath, defaultWorkspacePath, vaults)
   const slug = filenameStem ? slugify(filenameStem) : slugify(title)
   const status = null
