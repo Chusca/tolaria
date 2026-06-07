@@ -1198,6 +1198,29 @@ mod tests {
         let (_lock, _cache_tmp, dir) = setup_git_vault();
         let vault = dir.path();
 
+        // Guards the cache's case-only-rename dedup (e.g. `Note.md` -> `note.md`),
+        // which is meaningful only on case-insensitive filesystems (macOS APFS
+        // default, Windows NTFS). On a case-sensitive filesystem (Linux ext4/
+        // btrfs) the two names are legitimately distinct files, so the dedup
+        // premise does not apply and the assertion fails for FS reasons rather
+        // than a cache defect — and because the panic happens while holding the
+        // process-global `ENV_LOCK`, it poisons the mutex and cascades
+        // `PoisonError` into every other cache test. Probe the real FS and skip.
+        // NOTE: skipping leaves the cache's handling of case-divergent paths on
+        // a case-sensitive FS unasserted; revisit if Tolaria targets such
+        // platforms as first-class.
+        let probe = vault.join("__TolariaCaseProbe__.tmp");
+        fs::write(&probe, b"").unwrap();
+        let case_insensitive = vault.join("__tolariacaseprobe__.tmp").exists();
+        let _ = fs::remove_file(&probe);
+        if !case_insensitive {
+            eprintln!(
+                "test_case_rename_no_duplicates: skipped — case-sensitive filesystem at {:?}",
+                vault
+            );
+            return;
+        }
+
         create_test_file(vault, "Note.md", "# Note\n\nOriginal case.");
         git_add_commit(vault, "init");
 
