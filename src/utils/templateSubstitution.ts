@@ -1,7 +1,6 @@
 import { format } from 'date-fns'
 
 export type TemplateContext = {
-  title?: string | null
   type?: string | null
   now?: Date
 }
@@ -16,7 +15,6 @@ const DEFAULT_PATTERNS: Record<string, string> = {
 const TOKEN_RESOLVERS = new Map<string, (arg: string | undefined, ctx: TemplateContext, now: Date) => string | null>([
   ['date', (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.date)],
   ['time', (arg, _ctx, now) => safeFormat(now, arg ?? DEFAULT_PATTERNS.time)],
-  ['title', (_arg, ctx) => ctx.title ?? ''],
   ['type', (_arg, ctx) => ctx.type ?? ''],
 ])
 

@@ -175,8 +175,8 @@ describe('buildNoteContent', () => {
   })
 
   it('substitutes template variables in the body', () => {
-    const content = buildNoteContent({ title: 'Standup', type: 'Meeting', template: '# {{title}} ({{type}})\n\nDate: {{date}}', now: new Date('2026-06-06T00:00:00') })
-    expect(content).toContain('# Standup (Meeting)')
+    const content = buildNoteContent({ title: 'Standup', type: 'Meeting', template: '# Note ({{type}})\n\nDate: {{date}}', now: new Date('2026-06-06T00:00:00') })
+    expect(content).toContain('# Note (Meeting)')
     expect(content).toContain('Date: 2026-06-06')
   })
 })

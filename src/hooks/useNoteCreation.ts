@@ -259,7 +259,7 @@ export function buildNoteContent({ title, type, status, template, initialEmptyHe
   if (status) lines.push(`status: ${status}`)
   appendDefaultFrontmatterLines(lines, defaults)
   lines.push('---')
-  const resolvedTemplate = template ? substituteTemplate(template, { title, type, now }) : template
+  const resolvedTemplate = template ? substituteTemplate(template, { type, now }) : template
   const body = buildNoteBody({ template: resolvedTemplate, initialEmptyHeading })
   return `${lines.join('\n')}\n${body}`
 }
@@ -567,7 +567,7 @@ async function createNamedNote({
   const typeEntry = resolveTypeEntry({ entries, typeName: type })
   const template = typeEntry?.template ?? null
   const defaults = resolveTypeInstanceDefaults({ entries, typeName: type })
-  const filenameStem = resolveTypeFilename(typeEntry, { title, type, now })
+  const filenameStem = resolveTypeFilename(typeEntry, { type, now })
   const plan = planNewNoteCreation({ entries, title, type, vaultPath, defaultWorkspacePath, vaults, template, defaults, filenameStem })
   if (plan.status === 'existing') {
     openExistingEntry?.(plan.entry)

@@ -20,12 +20,12 @@ describe('substituteTemplate', () => {
     expect(substituteTemplate('{{time:HH:mm:ss}}', { now: FIXED_NOW })).toBe('14:30:00')
   })
 
-  it('substitutes {{title}} and {{type}} from context', () => {
-    expect(substituteTemplate('# {{title}} ({{type}})', { title: 'Standup', type: 'Meeting' })).toBe('# Standup (Meeting)')
+  it('substitutes {{type}} from context', () => {
+    expect(substituteTemplate('# {{type}}', { type: 'Meeting' })).toBe('# Meeting')
   })
 
-  it('resolves {{title}} and {{type}} to empty when absent', () => {
-    expect(substituteTemplate('[{{title}}]', {})).toBe('[]')
+  it('resolves {{type}} to empty when absent', () => {
+    expect(substituteTemplate('[{{type}}]', {})).toBe('[]')
   })
 
   it('leaves unknown tokens verbatim', () => {
